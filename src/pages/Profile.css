@@ -1,0 +1,74 @@
+.w-100.sticky-bottom {
+    margin-top: 324px !important;
+}
+
+.w-100 {
+    background-color: #f0fffe;
+}
+
+img {
+    width: 40px !important;
+    height: 40px !important;
+}
+
+.alert.alert-warning {
+    background-color: #ff0000 !important;
+    border: 1px solid #ff0000 !important;
+    color: #fff !important;
+    width: 35% !important;
+    border-radius: 15px !important;
+    margin-left: 10px;
+    font-size: 1rem;
+    padding: 5px;
+    margin: 10px;
+}
+
+.maintitles {
+    margin-top: 40px;
+    margin: 30px;
+    background-color: #b9e7e7;
+    padding: 10px;
+    padding: 8px;
+    border-radius: 10px;
+    display: block;
+    text-align: center;
+    margin: 30px !important;
+}
+
+.profile_card {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    margin-bottom: 30px !important;
+}
+
+span.icon2 {
+    margin-left: 10px;
+    font-size: 20px;
+}
+
+img.card-img-top {
+    width: 200px !important;
+    height: 200px !important;
+    margin: 16px auto;
+    border-radius: 20px;
+}
+
+.w-100.sticky-bottom {
+    margin-top: 75px !important;
+}
+
+h5.card-title.afw-bold {
+    font-size: 16px !important;
+}
+
+
+img.heart-icon {
+    width: 30px !important;
+    height: 30px !important;
+}
+
+.card.mb-2.d-flex.card-border {
+    margin: 30px !important;
+}
