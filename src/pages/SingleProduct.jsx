@@ -31,9 +31,9 @@ const SingleProduct = () => {
   // - currentUser: an object that contains the details of the current user
   // - idCurrent: a string that represents the ID of the current user
   // - usernameCurrent: a string that represents the username of the current user
-//   const { currentUser } = useContext(AuthContext);
-//   const idCurrent = currentUser.id;
-//   const usernameCurrent = currentUser.username;
+   const { currentUser } = useContext(AuthContext);
+   const idCurrent = currentUser.id;
+   const usernameCurrent = currentUser.username;
 
   // - likes: a number that represents the number of likes of the post
   const likes = 0;
@@ -325,9 +325,9 @@ const SingleProduct = () => {
           />
         </div>
 
-        {/* <div className="buttons">
+        {<div className="buttons">
           <button onClick={handleClick}> Publish</button>
-        </div> */}
+        </div>}
       </div>
 
       {/* MENU HERE */}
