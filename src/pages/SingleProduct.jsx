@@ -242,7 +242,7 @@ const SingleProduct = () => {
   const handleClick = async (e) => {
     e.preventDefault();
     try {
-      const productResponse = await axios.post(`/comments/`, {
+      const productResponse = await axios.post(`${BACKEND_API_URL}/comments/`, {
         iduser: idCurrent,
         idproduct: postId,
         content: value,
@@ -260,7 +260,7 @@ const SingleProduct = () => {
   // Like button
   const handleLikeClick = async (postId) => {
     try {
-      const productResponse = await axios.patch(`/products/${postId}`, {
+      const productResponse = await axios.patch(`${BACKEND_API_URL}/products/${postId}`, {
         likes: post.likes + 1,
       });
 
@@ -274,7 +274,7 @@ const SingleProduct = () => {
   // Comment like button
   const handleCommentLikeClick = async (commentId, commentLikes) => {
     try {
-      const commentResponse = await axios.patch(`/comments/${commentId}`, {
+      const commentResponse = await axios.patch(`${BACKEND_API_URL}/comments/${commentId}`, {
         likes: commentLikes + 1,
       });
 

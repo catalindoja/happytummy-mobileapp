@@ -146,7 +146,7 @@ const SingleRecipe = () => {
     const handleLikeClick = async (postId) => {
         console.log("Like button clicked");
         try {
-            await axios.patch(`/recipes/${postId}`, {
+            await axios.patch(`${BACKEND_API_URL}/recipes/${postId}`, {
                 likes: post.likes + 1,
             });
             window.location.reload();
@@ -158,7 +158,7 @@ const SingleRecipe = () => {
     // Comments like button
     const handleCommentLikeClick = async (commentId, commentLikes) => {
         try {
-            await axios.patch(`/commentrecipes/${commentId}`, {
+            await axios.patch(`${BACKEND_API_URL}/commentrecipes/${commentId}`, {
                 likes: commentLikes + 1,
             });
 
