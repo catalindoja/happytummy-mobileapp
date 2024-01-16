@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/authContext";
@@ -6,12 +6,14 @@ import Edit from "../img/edit.png";
 import Delete from "../img/delete.png";
 import ProfilePicture from "../img/profile.png";
 import Heart from "../img/heart.png";
+import Reply from "../img/reply.png";
 import Arrow from "../img/arrow.png";
 import axios from "axios";
 import DOMPurify from "dompurify";
 import ReactQuill from 'react-quill';
 import moment from "moment";
 import "./SingleRecipe.css";
+import "./Reply.css";
 import { BACKEND_API_URL } from '../config/proxy.js';
 import Modal from 'react-modal';
 import arrowImage from "../img/arrow.png";
@@ -47,6 +49,7 @@ const SingleRecipe = () => {
     const [value, setValue] = useState(state?.newComment || "");
 
     const likes = 0;
+
     // Post comment
     const handleClick = async (e) => {
         e.preventDefault();
@@ -58,12 +61,64 @@ const SingleRecipe = () => {
                 likes,
                 date: moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
             });
-
+            await createNoti();
             window.location.reload();
-
         } catch (err) {
             console.log(err);
         }
+    };
+
+    // Add state variables for handling reply functionality
+    const [replyingTo, setReplyingTo] = useState(null); // To store the ID of the comment being replied to
+    const [replyContent, setReplyContent] = useState(""); // To store the content of the reply
+    const [isReplyVisible, setIsReplyVisible] = useState(false);
+
+    // Inside your functional component
+    const replyContainerRef = useRef(null);
+
+    // Use useEffect to trigger the scroll when isReplyVisible changes
+    useEffect(() => {
+        if (isReplyVisible && replyContainerRef.current) {
+        replyContainerRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+        }
+    }, [isReplyVisible]);
+
+    // Function to handle opening the reply pop-up
+    const handleReply = (commentId, username) => {
+        setReplyingTo(commentId);
+        setIsReplyVisible(true);
+    };
+
+    // Function to handle submitting the reply
+    const submitReply = async () => {
+        try {
+        // Send the reply to the backend
+        await axios.post(`/commentrecipes/`, {
+            iduser: idCurrent,
+            idrecipe: postId,
+            content: replyContent,
+            likes: 0, // Assuming initial likes count is 0
+            idparent: replyingTo, // Add the ID of the comment being replied to
+        });
+        // Close the modal/pop-up and reset state variables
+        setIsReplyVisible(false);
+        setReplyingTo(null);
+        setReplyContent("");
+        // Refresh comments or update state to include the new reply
+
+        window.location.reload();
+        } catch (err) {
+        console.log(err);
+        }
+    };
+
+    const closeReplyModal = () => {
+        setIsReplyVisible(false);
+        setReplyingTo(null);
+        setReplyContent("");
     };
 
     // Report error modal
@@ -146,9 +201,10 @@ const SingleRecipe = () => {
     const handleLikeClick = async (postId) => {
         console.log("Like button clicked");
         try {
-            await axios.patch(`${BACKEND_API_URL}/recipes/${postId}`, {
+            await axios.patch(`/recipes/${postId}`, {
                 likes: post.likes + 1,
             });
+            await createNoti();
             window.location.reload();
         } catch (err) {
             console.log(err);
@@ -158,7 +214,7 @@ const SingleRecipe = () => {
     // Comments like button
     const handleCommentLikeClick = async (commentId, commentLikes) => {
         try {
-            await axios.patch(`${BACKEND_API_URL}/commentrecipes/${commentId}`, {
+            await axios.patch(`/commentrecipes/${commentId}`, {
                 likes: commentLikes + 1,
             });
 
@@ -177,6 +233,30 @@ const SingleRecipe = () => {
     const closeModal = () => {
         setModalIsOpen(false);
     };
+
+    // Create new notification
+    const createNoti = async (e) => {
+        try {
+            const likeResponse = await axios.post(`${BACKEND_API_URL}/notifications/`, {
+                idReceiver: userOwner.id,
+                content: `${currentUser.username} liked your recipe ${post.title} ❤`
+            });
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
+    // Create new notification
+    const createNoti2 = async (e) => {
+        try {
+            const comResponse = await axios.post(`${BACKEND_API_URL}/notifications/`, {
+                idReceiver: userOwner.id,
+                content: `${currentUser.username} commented on your recipe ${post.title} 🗯`
+            });
+        } catch (err) {
+            console.log(err);
+        }
+    }
 
     // Render the SingleRecipe component
     return (
@@ -287,7 +367,7 @@ const SingleRecipe = () => {
                     <div className="single-header">
                         <h1 className="product-name my-3">{post.title}</h1>
                         <button className="like" onClick={() => handleLikeClick(postId)}>
-                            <img src={Heart} alt="Heart Icon" className="heart-icon" />
+                            <img src={Heart} alt="Heart Icon" className="heart-icon-top" />
                             <div className="likes-count">{post.likes}</div>
                         </button>
                     </div>
@@ -320,30 +400,63 @@ const SingleRecipe = () => {
                         {comments.length === 0 ? (
                             <p>No comments yet!</p>
                         ) : (
-                            comments.map(comment => (
-                                <li key={comment.id} className="comment">
-                                    <div className="comment-content">
-                                        <div className="user-info">
-                                            <img src={ProfilePicture} alt="" className="user-image" />
+                            comments.map(comment => {
+                                const parentComment = comments.find(c => c.id === comment.idparent);                 
+                                return (
+                                    <li key={comment.id} className="comment">
+                                      <div className="comment-content">
+                                        <div className="comment-header">
+                    
+                                          <div className="user-info">
+                                            <img src={ProfilePicture} alt="Profile Picture" className="user-image" />
                                             <Link to={`/app/user/${userComments[comment.id] ? userComments[comment.id].id : "Unknown"}`} className="username">
-                                                {userComments[comment.id] ? userComments[comment.id].username : "Unknown"}
+                                              {userComments[comment.id] ? userComments[comment.id].username : "Unknown"}
+                                              {comment.parentId && parentComment && (
+                                                <> replied to {userComments[parentComment.id]?.username}</>
+                                              )}
                                             </Link>
-                                            <button className="comment-likes" onClick={() => handleCommentLikeClick(comment.id, comment.likes)}>
-                                                <img src={Heart} alt="Heart Icon" className="heart-icon" />
-                                                <div className="likes-count">{comment.likes}</div>
-                                            </button>
+                                          </div>
                                         </div>
                                         <p
-                                            dangerouslySetInnerHTML={{
-                                                __html: DOMPurify.sanitize(comment.content)
-                                            }}
+                                          dangerouslySetInnerHTML={{
+                                            __html: DOMPurify.sanitize(comment.content)
+                                          }}
                                         ></p>
-                                    </div>
-
-                                </li>
-                            )
+                                      </div>
+                                      <div className="likeandreply">
+                                        <button className="comment-likes-component" onClick={() => handleCommentLikeClick(comment.id, comment.likes)}>
+                                          <img src={Heart} alt="Heart Icon" className="heart-icon-component" />
+                                          <div className="likes-count-component">{comment.likes}</div>
+                                        </button>
+                                        <button onClick={() => handleReply(comment.id, userComments[comment.id]?.username)}>
+                                          <img src={Reply} alt="Reply Icon" className="reply-icon" />
+                                        </button>
+                                      </div>
+                                    </li>
+                                  )
+                            }
                             ))}
                     </ul>
+
+                    {isReplyVisible && (
+                    <div ref={replyContainerRef} className="reply-container">
+                        <div className="reply-header">
+                        <span>Replying to: {userComments[replyingTo]?.username}</span>
+                        </div>
+                        <div className="reply-body">
+                        <textarea
+                            value={replyContent}
+                            onChange={(e) => setReplyContent(e.target.value)}
+                            placeholder="Write your reply..."
+                            className="reply-textarea"
+                        />
+                        <div className="reply-buttons">
+                            <button onClick={submitReply} className="submit-reply-button">Submit</button>
+                            <button onClick={closeReplyModal} className="cancel-reply-button">Cancel</button>
+                        </div>
+                        </div>
+                    </div>
+                    )}
 
                     <h3 className="write-comment-heading">Write a new comment!</h3>
                     <div className="editorContainer">

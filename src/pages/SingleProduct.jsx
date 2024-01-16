@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/authContext";
 import Edit from "../img/edit.png";
@@ -6,12 +6,14 @@ import Delete from "../img/delete.png";
 import ProfilePicture from "../img/profile.png";
 import Arrow from "../img/arrow.png";
 import Heart from "../img/heart.png";
+import Reply from "../img/reply.png";
 import axios from "axios";
 import moment from "moment";
 import DOMPurify from "dompurify";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import "./SingleProduct.css";
+import "./Reply.css";
 import { BACKEND_API_URL } from '../config/proxy.js';
 import Help from '../img/helpicon.png';
 import Modal from 'react-modal';
@@ -107,6 +109,59 @@ const SingleProduct = () => {
   // - categoryProduct: an object that contains the details of the category of the post
   const idCategory = post.idcategory;
   const [categoryProduct, setCategory] = useState("");
+
+  // Add state variables for handling reply functionality
+  const [replyingTo, setReplyingTo] = useState(null); // To store the ID of the comment being replied to
+  const [replyContent, setReplyContent] = useState(""); // To store the content of the reply
+  const [isReplyVisible, setIsReplyVisible] = useState(false);
+
+  // Inside your functional component
+  const replyContainerRef = useRef(null);
+
+  // Use useEffect to trigger the scroll when isReplyVisible changes
+  useEffect(() => {
+    if (isReplyVisible && replyContainerRef.current) {
+      replyContainerRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  }, [isReplyVisible]);
+
+  // Function to handle opening the reply pop-up
+  const handleReply = (commentId, username) => {
+    setReplyingTo(commentId);
+    setIsReplyVisible(true);
+  };
+
+  // Function to handle submitting the reply
+  const submitReply = async () => {
+    try {
+      // Send the reply to the backend
+      await axios.post(`/comments/`, {
+        iduser: idCurrent,
+        idproduct: postId,
+        content: replyContent,
+        likes: 0, // Assuming initial likes count is 0
+        parentId: replyingTo, // Add the ID of the comment being replied to
+      });
+      // Close the modal/pop-up and reset state variables
+      setIsReplyVisible(false);
+      setReplyingTo(null);
+      setReplyContent("");
+      // Refresh comments or update state to include the new reply
+
+      window.location.reload();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const closeReplyModal = () => {
+    setIsReplyVisible(false);
+    setReplyingTo(null);
+    setReplyContent("");
+  };
 
   // Nuevo estado para manejar si el usuario puede comer el producto o no
   const [canUserEatProduct, setCanUserEatProduct] = useState(null);
@@ -242,6 +297,7 @@ const SingleProduct = () => {
   const handleClick = async (e) => {
     e.preventDefault();
     try {
+      console.log("YES");
       const productResponse = await axios.post(`${BACKEND_API_URL}/comments/`, {
         iduser: idCurrent,
         idproduct: postId,
@@ -249,9 +305,8 @@ const SingleProduct = () => {
         likes,
         date: moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
       });
-
+      await createNoti2();
       window.location.reload();
-
     } catch (err) {
       console.log(err);
     }
@@ -260,12 +315,11 @@ const SingleProduct = () => {
   // Like button
   const handleLikeClick = async (postId) => {
     try {
-      const productResponse = await axios.patch(`${BACKEND_API_URL}/products/${postId}`, {
+      const productResponse = await axios.patch(`/products/${postId}`, {
         likes: post.likes + 1,
       });
-
+      await createNoti();
       window.location.reload();
-
     } catch (err) {
       console.log(err);
     }
@@ -274,15 +328,22 @@ const SingleProduct = () => {
   // Comment like button
   const handleCommentLikeClick = async (commentId, commentLikes) => {
     try {
-      const commentResponse = await axios.patch(`${BACKEND_API_URL}/comments/${commentId}`, {
+      const commentResponse = await axios.patch(`/comments/${commentId}`, {
         likes: commentLikes + 1,
       });
-
       window.location.reload();
-
     } catch (err) {
       console.log(err);
     }
+  };
+
+  // Info of allergen popup
+  const [modalIsOpenInfo, setModalIsOpenInfo] = useState(true);
+  const openModalInfo = () => {
+    setModalIsOpenInfo(true);
+  };
+  const closeModalInfo = () => {
+    setModalIsOpenInfo(false);
   };
 
   // Modal pop-up
@@ -303,9 +364,34 @@ const SingleProduct = () => {
     setModalIsOpen2(false);
   };
 
+  // Create new notification
+  const createNoti = async (e) => {
+    try {
+      const likeResponse = await axios.post(`${BACKEND_API_URL}/notifications/`, {
+        idReceiver: userOwner.id,
+        content: `${currentUser.username} liked your product ${post.product_name} ❤`
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  // Create new notification
+  const createNoti2 = async (e) => {
+    try {
+      const comResponse = await axios.post(`${BACKEND_API_URL}/notifications/`, {
+        idReceiver: userOwner.id,
+        content: `${currentUser.username} commented on your product ${post.product_name} 🗯`
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   return (
     <div className="single-product">
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"></link>
+
       <div className="content">
         <Link to="#" onClick={() => window.history.back()}>
           <img className="arrow-img" src={Arrow} alt="" />
@@ -410,17 +496,46 @@ const SingleProduct = () => {
         <div className="single-header">
           <h1 className="product-name my-3">{post.product_name}</h1>
           <button className="like" onClick={() => handleLikeClick(postId)}>
-            <img src={Heart} alt="Heart Icon" className="heart-icon" />
+            <img src={Heart} alt="Heart Icon" className="heart-icon-top" />
             <div className="likes-count">{post.likes}</div>
           </button>
         </div>
 
+        <Modal
+          isOpen={modalIsOpenInfo}
+          onRequestClose={closeModalInfo}
+          shouldCloseOnOverlayClick={true}
+          shouldCloseOnEsc={true}
+          className="modal-content"
+          overlayClassName="modal-overlay"
+        >
+          <div>
+            <span className="alert-info-popup">
+              {canUserEat() ? (
+                <div class="alert alert-success alert-info-popup" role="alert" onClick={openModalInfo}>
+                  Based on your preferences, you can consume this product without any problems 😄
+                </div>
+              ) : (
+                <div class="alert alert-danger alert-info-popup" role="alert" onClick={openModalInfo}>
+                  Based on your preferences, this product contains allergens that may negatively affect you 😥
+                </div>
+              )}
+            </span>
+            <img
+              src={arrowImage}
+              alt="Close"
+              className="close-icon"
+              onClick={closeModalInfo}
+            />
+          </div>
+        </Modal>
+
         {canUserEat() ? (
-          <div class="alert alert-success" role="alert">
+          <div class="alert alert-success" role="alert" onClick={openModalInfo}>
             You can consume this product 😄
           </div>
         ) : (
-          <div class="alert alert-danger" role="alert">
+          <div class="alert alert-danger" role="alert" onClick={openModalInfo}>
             This product may be harmful for you 😥
           </div>
         )}
@@ -482,29 +597,63 @@ const SingleProduct = () => {
           {comments.length == 0 ? (
             <p>No comments yet!</p>
           ) : (
-            comments.map(comment => (
-              <li key={comment.id} className="comment">
-                <div className="comment-content">
-                  <div className="user-info">
-                    <img src={ProfilePicture} alt="Profile Picture" className="user-image" />
-                    <Link to={`/app/user/${userComments[comment.id] ? userComments[comment.id].id : "Unknown"}`} className="username">
-                      {userComments[comment.id] ? userComments[comment.id].username : "Unknown"}
-                    </Link>
-                    <button className="comment-likes" onClick={() => handleCommentLikeClick(comment.id, comment.likes)}>
-                      <img src={Heart} alt="Heart Icon" className="heart-icon" />
-                      <div className="likes-count">{comment.likes}</div>
+            comments.map(comment => {
+              const parentComment = comments.find(c => c.id === comment.parentId);
+              return (
+                <li key={comment.id} className="comment">
+                  <div className="comment-content">
+                    <div className="comment-header">
+
+                      <div className="user-info">
+                        <img src={ProfilePicture} alt="Profile Picture" className="user-image" />
+                        <Link to={`/app/user/${userComments[comment.id] ? userComments[comment.id].id : "Unknown"}`} className="username">
+                          {userComments[comment.id] ? userComments[comment.id].username : "Unknown"}
+                          {comment.parentId && parentComment && (
+                            <> replied to {userComments[parentComment.id]?.username}</>
+                          )}
+                        </Link>
+                      </div>
+                    </div>
+                    <p
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(comment.content)
+                      }}
+                    ></p>
+                  </div>
+                  <div className="likeandreply">
+                    <button className="comment-likes-component" onClick={() => handleCommentLikeClick(comment.id, comment.likes)}>
+                      <img src={Heart} alt="Heart Icon" className="heart-icon-component" />
+                      <div className="likes-count-component">{comment.likes}</div>
+                    </button>
+                    <button onClick={() => handleReply(comment.id, userComments[comment.id]?.username)}>
+                      <img src={Reply} alt="Reply Icon" className="reply-icon" />
                     </button>
                   </div>
-                  <p
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(comment.content)
-                    }}
-                  ></p>
-                </div>
-              </li>
-            )
+                </li>
+              )
+            }
             ))}
         </ul>
+
+        {isReplyVisible && (
+          <div ref={replyContainerRef} className="reply-container">
+            <div className="reply-header">
+              <span>Replying to: {userComments[replyingTo]?.username}</span>
+            </div>
+            <div className="reply-body">
+              <textarea
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Write your reply..."
+                className="reply-textarea"
+              />
+              <div className="reply-buttons">
+                <button onClick={submitReply} className="submit-reply-button">Submit</button>
+                <button onClick={closeReplyModal} className="cancel-reply-button">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <h3 className="write-comment-heading">Write a new comment!</h3>
         <div className="editorContainer">
