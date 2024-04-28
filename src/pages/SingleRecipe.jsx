@@ -54,7 +54,7 @@ const SingleRecipe = () => {
     const handleClick = async (e) => {
         e.preventDefault();
         try {
-            await axios.post(`/commentrecipes/`, {
+            await axios.post(`${BACKEND_API_URL}/commentrecipes/`, {
                 iduser: idCurrent,
                 idrecipe: postId,
                 content: value,
@@ -96,7 +96,7 @@ const SingleRecipe = () => {
     const submitReply = async () => {
         try {
         // Send the reply to the backend
-        await axios.post(`/commentrecipes/`, {
+        await axios.post(`${BACKEND_API_URL}/commentrecipes/`, {
             iduser: idCurrent,
             idrecipe: postId,
             content: replyContent,
@@ -201,7 +201,7 @@ const SingleRecipe = () => {
     const handleLikeClick = async (postId) => {
         console.log("Like button clicked");
         try {
-            await axios.patch(`/recipes/${postId}`, {
+            await axios.patch(`${BACKEND_API_URL}/recipes/${postId}`, {
                 likes: post.likes + 1,
             });
             await createNoti();
@@ -214,7 +214,7 @@ const SingleRecipe = () => {
     // Comments like button
     const handleCommentLikeClick = async (commentId, commentLikes) => {
         try {
-            await axios.patch(`/commentrecipes/${commentId}`, {
+            await axios.patch(`${BACKEND_API_URL}/commentrecipes/${commentId}`, {
                 likes: commentLikes + 1,
             });
 
