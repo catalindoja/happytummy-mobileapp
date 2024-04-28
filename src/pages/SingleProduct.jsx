@@ -315,7 +315,7 @@ const SingleProduct = () => {
   // Like button
   const handleLikeClick = async (postId) => {
     try {
-      const productResponse = await axios.patch(`/products/${postId}`, {
+      const productResponse = await axios.patch(`${BACKEND_API_URL}/products/${postId}`, {
         likes: post.likes + 1,
       });
       await createNoti();
@@ -328,7 +328,7 @@ const SingleProduct = () => {
   // Comment like button
   const handleCommentLikeClick = async (commentId, commentLikes) => {
     try {
-      const commentResponse = await axios.patch(`/comments/${commentId}`, {
+      const commentResponse = await axios.patch(`${BACKEND_API_URL}/comments/${commentId}`, {
         likes: commentLikes + 1,
       });
       window.location.reload();
